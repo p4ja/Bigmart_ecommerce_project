@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+{% extends 'index.html' %}
+{% block content %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="card">
+                <div class="card-body">
+                  <h4 class="card-title">Add New Products Here..</h4>
+                  <form class="forms-sample" method="post" action="{% url 'save_product' %}" enctype="multipart/form-data">
+                      {% csrf_token %}
+                    <div class="form-group">
+                      <label for="exampleInputUsername1">ProductName</label>
+                      <input type="text" class="form-control" id="exampleInputUsername1" placeholder="Productname" name="ProductName">
+                    </div>
+                      <div class="form-group">
+                      <label for="exampleSelectGender">Select Product category</label>
+                        <select class="form-control" id="exampleSelectGender" name="ProductCategory">
+                          <option>select</option>
+                          {% for d in cat %}
+                          <option>{{d.CategoryName}}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="form-group">
+                      <label for="exampleInputUsername1">Price</label>
+                      <input type="text" class="form-control" id="exampleInputPrice" placeholder="Price" name="Price">
+                    </div>
+                    <div class="form-group">
+                      <label>Description</label>
+                        <textarea  name="Description" cols="163" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                      <label for="exampleInputFileupload">UploadProductImage</label>
+                      <input type="file" class="form-control" id="exampleInputFileupload" placeholder="ProductImage" name="ProductImage">
+                    </div>
+                    <button type="submit" class="btn btn-primary me-2">Submit</button>
+                    <button class="btn btn-light">Cancel</button>
+                  </form>
+                </div>
+              </div>
+</body>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+{% if messages %}
+{% for i in messages %}
+{% if i.tags == 'warning' %}
+    <script>
+    swal('{{i}}', '','warning')
+    </script>
+{% elif i.tags == 'error' %}
+    <script>
+    swal('{{i}}', '','error')
+    </script>
+{% elif i.tags == 'info' %}
+    <script>
+    swal('{{i}}', '','info')
+    </script>
+{% else %}
+    <script>
+    swal('{{i}}', '','success')
+    </script>
+{% endif %}
+{% endfor %}
+{% endif %}
+</html>
+{% endblock %}
