@@ -1,7 +1,8 @@
 from django.shortcuts import render,redirect
 from Backend.models import (Product_db,category_db)
-from WebApp.models import Contact_db,registration_db,cart_db
+from WebApp.models import Contact_db,registration_db,cart_db,place_orderdb
 from django.contrib import messages
+import razorpay
 # Create your views here.
 def home_page(req):
     cat=category_db.objects.all()
@@ -23,6 +24,7 @@ def save_contact(req):
         mes=req.POST.get('message')
         obj=Contact_db(name=na,email=em,phone=pho,subject=sub,message=mes)
         obj.save()
+        messages.success(req, "contact saved succesfully..")
         return redirect(contact_page)
 
 def our_products(req):
@@ -69,6 +71,7 @@ def Userlogin(request):
         if registration_db.objects.filter(username=un,password=pwsd).exists():
             request.session['username']=un
             request.session['password']=pwsd
+            messages.success(request, "login successfully..")
             return redirect(home_page)
         else:
             return redirect(registeration_page)
@@ -94,10 +97,17 @@ def save_cart(request):
 
 def cart_page(request):
     data=cart_db.objects.filter(username=request.session['username'])
+    subtotal=0
+    shipping_charge=0
     total=0
     for d in data:
-        total=total+d.total_price
-    return render(request,"cart.html",{'data':data,'total':total})
+        subtotal=subtotal+d.total_price
+        if subtotal>=500:
+            shipping_charge=50
+        else:
+            shipping_charge=100
+        total=shipping_charge + subtotal
+    return render(request,"cart.html",{'data':data,'subtotal':subtotal,'shipping_charge':shipping_charge,'total':total})
 
 def delete_cart(req,p_id):
     x=cart_db.objects.filter(id=p_id)
@@ -107,3 +117,51 @@ def delete_cart(req,p_id):
 
 def userlogin_page(req):
     return render(req,"user_login.html")
+def checkout_page(request):
+    data=cart_db.objects.filter(username=request.session['username'])
+    subtotal = 0
+    shipping_charge = 0
+    total = 0
+    for d in data:
+        subtotal = subtotal + d.total_price
+        if subtotal >= 500:
+            shipping_charge = 50
+        else:
+            shipping_charge = 100
+        total = shipping_charge + subtotal
+    return render(request,"checkout.html",{'data':data,'subtotal':subtotal,'shipping_charge':shipping_charge,'total':total})
+
+def payment_page(request):
+    #retrieve the place_orderdb object with the specified Id
+    customer=place_orderdb.objects.order_by('-id').first()
+
+    #get the payment amount of the specified customer
+    pay=customer.total_price
+
+    #convert the amount to paisa (smallest currency unit)
+    amount=int(pay*100)                  #Assuming payment amount in rupees
+
+    #convert amount to string for printing
+    pay_str=str(amount)
+
+
+    #printing each character of the payment amount
+    for i in pay_str:
+        print(i)
+    if request.method=="POST":
+        order_currency='INR'
+        client=razorpay.Client(auth=('rzp_test_VuEafQLHBKrSGH','vbTtWMTJU57Kcl8U7GP2bLa2'))
+        payment=client.order.create({'amount':amount,'currency':order_currency,'payment_capture':'1'})
+    return render(request,"payment.html",{'customer':customer,'pay_str':pay_str})
+
+def save_placeorder(request):
+    if request.method=="POST":
+        na=request.POST.get('Name')
+        em=request.POST.get('email')
+        add=request.POST.get('Address')
+        pho=request.POST.get('Phone')
+        bill=request.POST.get('bill')
+        tp=request.POST.get('total')
+        obj=place_orderdb(Name=na,email=em,Address=add,Phone=pho,bill=bill,total_price=tp)
+        obj.save()
+        return redirect(payment_page)
